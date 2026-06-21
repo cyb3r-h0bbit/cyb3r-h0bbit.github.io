@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investigação de Phishing — Campanha Gophish em Ambiente Fintech — Daniel Cavalcante</title>
+<meta name="description" content="Análise forense completa de uma campanha de phishing real direcionada a uma fintech, da identificação do toolkit à classificação de severidade.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../writeup.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-name">Daniel Cavalcante</a>
+    <div class="nav-links">
+      <a href="../../index.html#projetos">Portfólio</a>
+      <a href="../index.html">Writeups</a>
+      <a href="../../index.html#contato">Contato</a>
+    </div>
+  </div>
+</nav>
+
+<article class="wrap article">
+  <a class="back-link" href="../index.html">&larr; Todos os writeups</a>
+
+  <div class="article-meta-top">
+    <span class="type-badge type-incident">Análise de Incidente</span>
+    <span class="meta-date">28 abr 2026</span>
+    
+  </div>
+
+  <h1 class="article-title">Investigação de Phishing — Campanha Gophish em Ambiente Fintech</h1>
+  <p class="article-summary">Análise forense completa de uma campanha de phishing real direcionada a uma fintech, da identificação do toolkit à classificação de severidade.</p>
+
+  <div class="article-tags">
+    <span class="tag">phishing</span>
+    <span class="tag">email-forensics</span>
+    <span class="tag">mitre-attack</span>
+    <span class="tag">ioc</span>
+    <span class="tag">gophish</span>
+  </div>
+
+  <div class="article-divider"></div>
+
+  <div class="article-body">
+    <h2 id="contexto">Contexto</h2>
+<p>Recebi um e-mail interno com assunto "Especial Dia das Mães 🌷 Uma surpresa
+para você", aparentemente enviado pelo time de comunicação interna da empresa.
+Algo no remetente chamou atenção antes mesmo de abrir: o domínio parecia
+correto à primeira vista, mas não estava.</p>
+<p>Decidi investigar antes de reportar — queria chegar ao time de segurança com
+evidências, não só uma suspeita.</p>
+<h2 id="hipotese-inicial">Hipótese inicial</h2>
+<p>E-mails de campanhas internas legítimas vêm sempre do domínio corporativo
+oficial. Esse tinha nuances sutis no remetente que pediam uma checagem mais
+profunda dos headers brutos do e-mail.</p>
+<h2 id="investigacao">Investigação</h2>
+<h3 id="1-analise-dos-headers">1. Análise dos headers</h3>
+<p>Abri o <code>.eml</code> em editor de texto puro e fui direto ao campo <code>X-Mailer</code>:</p>
+<div class="codehilite"><pre><span></span><code>X-Mailer: gophish
+</code></pre></div>
+
+<p>Esse já foi o primeiro sinal forte. Gophish é um framework open-source
+legítimo para simulações de phishing — mas também é amplamente reaproveitado
+por atacantes reais por ser leve e fácil de configurar.</p>
+<h3 id="2-remetente-forjado">2. Remetente forjado</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">X</span><span class="o">-</span><span class="n">Google</span><span class="o">-</span><span class="n">Original</span><span class="o">-</span><span class="k">From</span><span class="err">:</span><span class="w"> </span><span class="n">comunicapagsmile</span><span class="nv">@pagsrnmile</span><span class="p">.</span><span class="n">com</span>
+</code></pre></div>
+
+<p>O domínio real era <code>pagsrnmile.com</code>, não o domínio corporativo legítimo. Um
+clássico de <strong>typosquatting</strong>: a substituição de "m" por "rn" é quase
+imperceptível na maioria das fontes usadas em clientes de e-mail.</p>
+<h3 id="3-infraestrutura-do-link-malicioso">3. Infraestrutura do link malicioso</h3>
+<p>O link embutido no corpo do e-mail apontava para:</p>
+<div class="codehilite"><pre><span></span><code>beverly-boc-polar-knows.trycloudflare.com
+</code></pre></div>
+
+<p>Um subdomínio de <strong>Cloudflare Tunnel</strong> — infraestrutura que permite expor um
+serviço local através de um túnel temporário, frequentemente abusada por
+atacantes porque a infraestrutura é efêmera e difícil de takedown.</p>
+<h3 id="4-pixel-de-rastreamento">4. Pixel de rastreamento</h3>
+<p>O HTML do e-mail continha uma imagem de 1x1 pixel carregada de um endpoint
+externo, técnica clássica para confirmar quando o e-mail é aberto — sinal de
+campanha com tracking ativo, não um teste isolado.</p>
+<h2 id="classificacao">Classificação</h2>
+<table>
+<thead>
+<tr>
+<th>Critério</th>
+<th>Achado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Técnica MITRE ATT&amp;CK</td>
+<td>T1566.002 — Spearphishing Link</td>
+</tr>
+<tr>
+<td>Toolkit identificado</td>
+<td>Gophish</td>
+</tr>
+<tr>
+<td>Vetor</td>
+<td>Typosquatting de domínio corporativo</td>
+</tr>
+<tr>
+<td>Infraestrutura C2</td>
+<td>Cloudflare Tunnel (efêmera)</td>
+</tr>
+<tr>
+<td>Severidade</td>
+<td><strong>Crítica</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="resposta">Resposta</h2>
+<p>Documentei todos os achados em um relatório técnico estruturado: headers
+brutos, IOCs extraídos, técnica MITRE mapeada e recomendação de bloqueio do
+domínio e do subdomínio de tunnel a nível de proxy/firewall. O relatório foi
+entregue ao gestor de segurança da empresa com o assunto sinalizado como
+prioridade alta.</p>
+<h2 id="licoes">Lições</h2>
+<ul>
+<li>Headers brutos contam uma história que a visualização padrão do cliente de
+  e-mail esconde — vale sempre abrir o <code>.eml</code> puro quando algo parece
+  estranho.</li>
+<li>Typosquatting de domínio é eficaz justamente porque depende de um detalhe
+  visual sutil, não de sofisticação técnica.</li>
+<li>Cloudflare Tunnel como infraestrutura de phishing está cada vez mais comum
+  porque dificulta a atribuição e o takedown tradicional.</li>
+</ul>
+  </div>
+
+  <div class="article-footer">
+    <a class="back-link" href="../index.html">&larr; Todos os writeups</a>
+  </div>
+</article>
+
+<footer class="wrap">
+  <span>© 2026 Daniel Cavalcante</span>
+  <span>São Paulo, Brasil</span>
+</footer>
+
+</body>
+</html>
